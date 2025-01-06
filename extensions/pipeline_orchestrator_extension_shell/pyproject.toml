@@ -1,0 +1,26 @@
+[project]
+name = "pulumi-orchestrator-extension-shell"
+version = "0.1.0"
+description = "Shell extension for Pulumi Orchestrator"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+dependencies = [
+    "pydantic>=2.10.4",
+    "pulumi-orchestrator>=0.1.0"
+]
+requires-python = ">=3.13"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["pipeline_orchestrator_extension_shell"]

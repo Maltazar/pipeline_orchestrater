@@ -1,0 +1,160 @@
+deploy_play_name:
+  core: # This is the core of the pipeline and the main configuration for the pipeline
+    execution_defaults:  # Default execution settings for all extensions
+      # execution_defaults is a global setting for all extensions, it will be used to set the default execution settings for all extensions
+      # individually the extensions can override the global settings with their own settings, called execution_settings
+      timeout_seconds: 300
+      retry:
+      max_attempts: 3
+      delay_seconds: 5
+      exponential_backoff: true
+      retry_on_exceptions:
+        - ConnectionError
+        - TimeoutError
+    extension_dir: ../extensions # This is the directory where the extensions are located
+  
+  secrets: # This is the secrets extension, it will be used to load the secrets into the  pipeline
+    # Secrets can point to a file or a http url or a git url
+    # If the secret is a file, it will be loaded into the  pipeline and the different secrets will be available in the pipeline using the format [initiator]_secrets:[secret_vault]:[key(in yaml dot notation)] ex. here -> _secret:hello-world:secret_name
+    # If the secret is a http url, it will be loaded into the  pipeline and the secret will be available in the pipeline using the same format as the file
+    # If the secret is a git url, it will be loaded into the  pipeline and the secret will be available in the pipeline using the same format as the file
+    - name: hello-world # This is the name of the secret "valut", it will be used in the pipeline to reference the secret
+      location: ./secrets.yaml # This is the location of the secret, it can be a file, a http url or a git url
+  
+  terraform: # This is the terraform extension, it will be used to deploy the terraform code
+    - name: proxmox # This is the name of the terraform play, it will be used in the pipeline to reference the terraform play
+      state_file: ./terraform.tfstate # This is the location of the terraform state file, it can be a file, a http url or a git url
+      location: git@github.com:simcax/terraform-proxmox-vm.git # This is the location of the terraform code, it can be a file, a http url or a git url
+      isolation:  # optional - if not set, the default is host
+        type: host # This is the isolation section, it will be used to define the isolation for the shell command (host, container)
+        # if the isolation is set to container
+        base_image: ubuntu:22.04 # This is the base image to use for the container
+
+      vars: # This is the variables section, it will be used to pass variables to the terraform code
+        - pm_password: _secret:hello-world:proxmox_password
+        - pm_user: hello-world@pam
+        - target_node: proxmox.hello-world.lan
+        - clone: "VM 9000"
+        - nameserver: 10.1.1.250
+        - ssh_key: _secret:hello-world:ssh_key
+        - disk_storage: local-lvm
+        - cloud_init_storage: local-lvm
+      groups: # This is the groups section, it will be used to define the groups of nodes to deploy, the idea is that this group can be used to deploy multiple nodes with the same configuration, 
+              # and the different nodes ips and names will be available in the pipeline using the format [initiator]_groups:[extension_name]:[extension_name_run]:[group_name]:[node_name] ex. here -> _group:terraform:proxmox:master:master-01 - or as the full group itself -> _group:terraform:proxmox:master
+        - group: master
+          name: master-0{}
+          count: 3
+          cores: 2
+          memory: 2048
+          disk: 20
+          network:
+            - vlan: 140
+              ip-range: 172.16.40.11-13
+        - group: worker
+          name: worker-0{}
+          count: 3
+          cores: 2
+          memory: 2048
+          disk: 20
+          network:
+            - vlan: 140
+              ip-range: 172.16.40.21-23
+  
+  ansible: # This is the ansible extension, it will be used to deploy the ansible playbooks
+    - name: k3s-ansible # This is the name of the ansible playbook, it will be used in the pipeline to reference the ansible playbook
+      location: https://github.com/techno-tim/k3s-ansible.git # This is the location of the ansible playbook, it can be a file, a http url or a git url
+      isolation:  # optional - if not set, the default is host
+        type: host # This is the isolation section, it will be used to define the isolation for the shell command (host, container)
+        # if the isolation is set to container
+        base_image: ubuntu:22.04 # This is the base image to use for the container
+      
+      play: site.yml # This is the playbook to run, it can be a file, a http url or a git url
+
+      inventory: # This is the inventory section, it will be used to define the inventory for the ansible playbook
+        hosts: # This is the hosts section, it will be used to define the hosts for the ansible playbook
+          - group: master
+            nodes:
+              - _group:terraform:proxmox:master
+          - group: worker
+            nodes:
+              - _group:terraform:proxmox:worker
+        vars: # This is the vars section, it will be used to define the variables for the ansible playbook
+          - k3s_version: v1.30.2+k3s2
+          - ansible_user: hello-world
+          - system_timezone: Europe/Copenhagen
+          - k3s_token: _secret:hello-world:k3s_token
+          - flannel_iface: eth0
+            remove: true
+          - cilium_iface: "eth0"
+          - cluster_cidr: 10.52.0.0/16
+          - apiserver_endpoint: 172.16.40.100
+          - metal_lb_ip_range: 172.16.40.150-172.16.40.200
+          - custom_registries: true
+          - custom_registries_yaml: |
+              mirrors:
+                registry.git.hello-world.lan:
+                  endpoint:
+                    - "https://registry.git.hello-world.lan"
+              configs:
+                "registry.git.hello-world.lan":
+                  tls:
+                    insecure_skip_verify: true
+    - name: nfs-client # This is the name of the ansible playbook, it will be used in the pipeline to reference the ansible playbook
+      location: https://git.hello-world.lan/nfs-client.git # This is the location of the ansible playbook, it can be a file, a http url or a git url
+      play: playbook.yml # This is the playbook to run, it can be a file, a http url or a git url
+      inventory: # This is the inventory section, it will be used to define the inventory for the ansible playbook
+        hosts:
+          - group: master
+          - group: worker
+  
+  helm: # This is the helm extension, it will be used to deploy the helm charts
+    - name: external-secrets # This is the name of the helm chart, it will be used in the pipeline to reference the helm chart
+      chart: https://charts.external-secrets.io # This is the location of the helm chart, it can be a file, a http url or a git url
+      isolation: # optional - if not set, the default is host
+        type: host # This is the isolation section, it will be used to define the isolation for the shell command (host, container)
+        # if the isolation is set to container
+        base_image: ubuntu:22.04 # This is the base image to use for the container
+
+      values: # Values can point to a file or a yaml object, matching the helm values.yaml format or the helm values format
+        - values.yaml
+        - dev-values.yaml
+      set: # set is a map of key-value pairs that will be add to the helm command line
+        - namespace: external-secrets
+        - installCRDs: true
+        - vault_secret: _secret:hello-world:vault_secret
+        - ssh_secret: _secret:hello-world:ssh_secret
+    - name: argocd
+      chart: https://argoproj.github.io/argo-helm
+      values: # This values is a yaml object, matching the helm values.yaml format
+        - namespace: argocd
+  
+  kubectl: # This is the kubectl extension, it will be used to deploy the kubectl commands
+    - name: kubectl-apply # This is the name of the job, it will be used in the pipeline to reference the job
+      location: https://git.hello-world.lan/kubectl-apply.git # This is the location of the kubectl commands, it can be a file, a http url or a git url
+      type: apply
+      isolation:  # optional - if not set, the default is host
+        type: host # This is the isolation section, it will be used to define the isolation for the shell command (host, container)
+        # if the isolation is set to container
+        base_image: ubuntu:22.04 # This is the base image to use for the container
+      files: # This is the files section, it will be used to define the files to apply
+        - external-secrets.yaml
+        - argocd-seed.yaml
+
+  shell: # This is the shell extension, it will be used to run the shell commands
+    - name: hello-world # This is the name of the shell command, it will be used in the pipeline to reference the shell command
+      type: bash # This is the type of the shell command, it can be bash, sh, zsh, powershell, etc. - or auto-detect the type from the commands and the OS type
+      isolation:  # optional - if not set, the default is host
+        type: host # This is the isolation section, it will be used to define the isolation for the shell command (host, container)
+        # if the isolation is set to container
+        base_image: ubuntu:22.04 # This is the base image to use for the container
+      scripts: # This is the scripts section, it will be used to define the scripts to run
+        - file: hello-world.sh # This is the file to run, it can be a file, a http url or a git url
+          type: bash
+          location: https://git.hello-world.lan/hello-world.sh
+          auth:
+            username: hello-world
+            password: hello-world
+      commands:
+        - echo "Hello, World!"
+
+

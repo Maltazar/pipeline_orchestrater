@@ -1,0 +1,17 @@
+deploy_play_name:
+  core:
+    extension_dir: ../../extensions
+
+  shell:
+    - name: hello-world 
+      type: bash 
+      isolation:
+        type: host
+      scripts:
+        - file: helloworld.sh
+          type: bash
+          location: https://github.com/Maltazar/hello-world-stuff/raw/refs/heads/main/helloworld.sh
+      commands:
+        - echo "Hello, World! from command"
+
+
