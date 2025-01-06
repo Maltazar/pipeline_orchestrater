@@ -11,6 +11,9 @@ deploy_play_name:
         - file: helloworld.sh
           type: bash
           location: https://github.com/Maltazar/hello-world-stuff/raw/refs/heads/main/helloworld.sh
+        - file: helloworld.sh
+          type: bash
+          location: https://github.com/Maltazar/hello-world-stuff.git
       commands:
         - echo "Hello, World! from command"
 

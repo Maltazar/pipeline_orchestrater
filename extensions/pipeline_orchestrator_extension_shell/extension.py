@@ -86,7 +86,7 @@ class ShellExtension(ExtensionHandler):
         Args:
             config: Raw configuration dictionary
         """
-        self.logger.info(f"Validating shell extension configuration: {config}")
+        self.logger.debug(f"Validating shell extension configuration: {config}")
         
         # Config should be a dictionary of shell configurations
         if not isinstance(config, dict):
@@ -119,21 +119,25 @@ class ShellExtension(ExtensionHandler):
             # Execute direct commands
             if config.commands:
                 for command in config.commands:
+                    self.logger.info(f"Executing command: {command}")
                     self.execute_command(config, command)
                     
             # Execute scripts
             if config.scripts:
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    temp_path = Path(temp_dir)
-                    for script in config.scripts:
+                for script in config.scripts:
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        target_path = Path(temp_dir)
                         # Create target directory structure if needed
-                        target_path = temp_path / script.file
+                        # target_path = temp_path / script.file
                         target_path.parent.mkdir(parents=True, exist_ok=True)
                         
                         # Download script with auth if configured
                         downloaded_path = ResourceDownloader.download(
                             script.location,
                             target=target_path,
+                            file=script.file,
                             auth=script.auth
                         )
+                        
+                        self.logger.info(f"Executing command: {script.type} {downloaded_path}")
                         self.execute_command(config, f"{script.type} {downloaded_path}") 

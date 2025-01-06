@@ -45,7 +45,15 @@ class ExtensionHandler(ABC):
         self.name = name
         self.parent_stack_name = parent_stack_name
         self.pulumi = pulumi
+        
+        # Get logger and inherit level from root logger
+        root_logger = logging.getLogger("pipeline")
         self.logger = logging.getLogger(f"extensions.{name}")
+
+        # Set level and ensure propagation
+        self.logger.setLevel(root_logger.level)
+        self.logger.parent = root_logger  # Explicitly set parent logger
+        self.logger.propagate = True
         
         # Create extension-specific stack name
         self.stack_name = f"{self.parent_stack_name}.{self.name}"

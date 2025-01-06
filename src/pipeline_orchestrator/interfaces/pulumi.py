@@ -130,7 +130,7 @@ class PulumiInterface:
             props: Resource properties
             opts: Resource options
         """
-        self.logger.info(f"Creating component resource: type={resource_type} name={name}")
+        self.logger.debug(f"Creating component resource: type={resource_type} name={name}")
         self.logger.debug(f"Resource properties: {props}")
         
         pulumi_opts = opts.to_pulumi_options() if opts else pulumi.ResourceOptions()
@@ -153,7 +153,7 @@ class PulumiInterface:
             # Also track by name for backward compatibility
             self.mock_resources[name] = mock_resource
             
-            self.logger.info(
+            self.logger.debug(
                 f"Created mock resource: type={resource_type} name={name} "
                 f"urn={mock_resource.urn}"
             )

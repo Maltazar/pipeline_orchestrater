@@ -12,7 +12,9 @@
             "workDir": "${workspaceFolder}/src",
             "env": {
                 // "PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml",
-                "PULUMI_CONFIG_PASSPHRASE": ""
+                "PULUMI_CONFIG_PASSPHRASE": "",
+                "DISABLE_FILE_LOGGING": "true",
+                "LOG_LEVEL": "INFO"
             }
         },
         {
@@ -23,7 +25,9 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src/pipeline_orchestrator",
             "env": {
-                "PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml"
+                "PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml",
+                "DISABLE_FILE_LOGGING": "true",
+                "LOG_LEVEL": "INFO"
             }
         }
     ]

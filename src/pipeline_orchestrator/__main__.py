@@ -33,9 +33,10 @@ def main():
     """Main entry point"""
     # Initialize logging
     _is_direct_run = is_direct_run()
-    level = "DEBUG" if _is_direct_run else "INFO"
+    _mode = "DIRECT/NATIVE" if _is_direct_run else "PULUMI"
+    level = os.getenv("LOG_LEVEL", "INFO")
     logger = setup_logger(log_level=level)
-    logger.info("Starting pipeline")
+    logger.info(f"Starting pipeline in MODE: {_mode}")
     try:
         # Create and initialize pipeline
         bootstrap = PipelineBootstrap(_is_direct_run)

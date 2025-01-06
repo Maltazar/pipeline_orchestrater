@@ -8,14 +8,15 @@ Responsible for:
 
 import logging
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 
 def setup_logger(log_level: str = "INFO", log_dir: Path = Path("logs")) -> logging.Logger:
-    """Configure and return the pipeline logger"""
+    """Configure and return the pipeline logger
     
-    # Ensure log directory exists
-    log_dir.mkdir(parents=True, exist_ok=True)
+    File logging can be disabled by setting DISABLE_FILE_LOGGING environment variable
+    """
     
     # Create logger
     logger = logging.getLogger("pipeline")
@@ -35,11 +36,13 @@ def setup_logger(log_level: str = "INFO", log_dir: Path = Path("logs")) -> loggi
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # File handler
-    file_handler = logging.FileHandler(
-        log_dir / f"pipeline_{datetime.now():%Y%m%d_%H%M%S}.log"
-    )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    # File handler (unless disabled by environment variable)
+    if not os.getenv("DISABLE_FILE_LOGGING"):
+        log_dir.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(
+            log_dir / f"pipeline_{datetime.now():%Y%m%d_%H%M%S}.log"
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
     
     return logger 
