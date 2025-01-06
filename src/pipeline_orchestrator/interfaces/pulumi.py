@@ -83,12 +83,12 @@ class PulumiInterface:
         """Get pipeline configuration for current stack
         
         Priority order:
-        1. Environment variable PULUMI_PIPELINE_CONFIG
+        1. Environment variable PIPELINE_CONFIG
         2. Pulumi config core:pipeline_config
         3. Default example_pipeline.yaml
         """
         # First check environment variable
-        env_config = os.getenv('PULUMI_PIPELINE_CONFIG')
+        env_config = os.getenv('PIPELINE_CONFIG')
         if env_config:
             return {
                 'stack_name': self.stack_name,

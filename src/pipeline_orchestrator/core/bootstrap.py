@@ -23,35 +23,13 @@ from pipeline_orchestrator.interfaces.pulumi import PulumiInterface
 class PipelineBootstrap:
     """Handles pipeline initialization and configuration loading"""
     
-    def __init__(self):
+    def __init__(self, direct_run: bool = False):
         # Detect if running directly with Python (not through Pulumi)
-        mock_mode = self.is_mock_mode()
-        self.pulumi = PulumiInterface(mock_mode=mock_mode)
+        self.pulumi = PulumiInterface(mock_mode=direct_run)
         self.logger = logging.getLogger("pipeline.bootstrap")
         self.config: Optional[PipelineConfig] = None
         self.pipeline: Optional[PipelineDefinition] = None
-        
-    def is_mock_mode(self) -> bool:
-        """
-        Determines if the code is running directly through Python (mock mode)
-        or through Pulumi's runtime.
-        """
-        try:
-            import pulumi
-            # When running through pulumi runtime, we should be able to get a valid stack
-            stack = pulumi.get_stack()
-            if not stack:
-                return True
-            
-            # Check if PULUMI_RUNTIME_VERSION env var is set
-            # This is automatically set when running through `pulumi up`
-            if not os.getenv('PULUMI_RUNTIME_VERSION'):
-                return True
                 
-            return False
-        except (ImportError, Exception):
-            return True
-            
         
     def load_configuration(self) -> None:
         """Load and validate pipeline configuration"""

@@ -7,17 +7,38 @@ Responsible for:
 4. Running pipeline
 """
 import json
+import os
 from pipeline_orchestrator.core.bootstrap import PipelineBootstrap
 from pipeline_orchestrator.core.logging import setup_logger
+
+def is_direct_run() -> bool:
+    """
+    Determines if the code is running directly through Python (mock/direct mode)
+    or through Pulumi's runtime.
+    """
+    try:
+        direct_run = False
+        if not os.getenv('PULUMI_RUNTIME_VERSION'):
+            direct_run = True
+        if not os.getenv('PULUMI_CONFIG'):
+            direct_run = True
+        if not os.getenv('PULUMI_CONFIG_SECRET_KEYS'):
+            direct_run = True
+            
+        return direct_run
+    except (ImportError, Exception):
+        return True
 
 def main():
     """Main entry point"""
     # Initialize logging
-    logger = setup_logger(log_level="DEBUG")
+    _is_direct_run = is_direct_run()
+    level = "DEBUG" if _is_direct_run else "INFO"
+    logger = setup_logger(log_level=level)
     logger.info("Starting pipeline")
     try:
         # Create and initialize pipeline
-        bootstrap = PipelineBootstrap()
+        bootstrap = PipelineBootstrap(_is_direct_run)
         bootstrap.load_configuration()
         
         # Create and run orchestrator
@@ -25,7 +46,7 @@ def main():
         orchestrator.execute()
         
         # Output extension data when running directly (not through Pulumi)
-        if bootstrap.is_mock_mode():
+        if _is_direct_run:
             # Get resource tree
             logger.debug("Resource Tree:")
             logger.debug(json.dumps(orchestrator.pulumi.get_resource_tree(), indent=2))

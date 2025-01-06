@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "pulumi",
+            "request": "launch",
+            "name": "pulumi up",
+            "command": "up",
+            "workDir": "${workspaceFolder}/src",
+            "env": {
+                // "PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml",
+                "PULUMI_CONFIG_PASSPHRASE": ""
+            }
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
@@ -12,7 +23,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src/pipeline_orchestrator",
             "env": {
-                "PULUMI_PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml"
+                "PIPELINE_CONFIG": "${workspaceFolder}/src/test/test_pipeline.yaml"
             }
         }
     ]
